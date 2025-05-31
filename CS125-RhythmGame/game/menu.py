@@ -532,15 +532,42 @@ def main_menu():
     # Define fixed button height and gap
     button_height = 90
     button_gap = 40
-    button_y_start = 350 # Adjusted starting position for fixed height
+    button_y_start = 420 # Adjusted starting position for fixed height
+
+    # Load the background image
+    background_image_path = os.path.join('graphics', 'BACKGROUND PICTURE FOR MP.png')
+    try:
+        background_image = pygame.image.load(background_image_path)
+        # Scale the image to fit the screen size
+        background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    except pygame.error as e:
+        print(f"Warning: Could not load background image {background_image_path}: {e}")
+        background_image = None # Fallback to black background if image not loaded
+
+    # State variable to show 'Coming Soon' message
+    show_coming_soon = False
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
-        SCREEN.fill(COLORS["BLACK"])
+        # Draw the background image or fill with black if image not loaded
+        if background_image:
+            SCREEN.blit(background_image, (0, 0))
+        else:
+            SCREEN.fill(COLORS["BLACK"])
 
         # Menu title
         menu_text = font_manager.get_font(100).render("RHYTHM GAME", True, COLORS["GOLD"])
         menu_rect = menu_text.get_rect(center=(SCREEN_WIDTH//2, 200))
+
+        # Add a semi-transparent black box behind the title
+        box_padding = 20 # Add some padding around the text
+        box_width = menu_rect.width + 2 * box_padding
+        box_height = menu_rect.height + 2 * box_padding
+        box_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
+        box_surface.fill((0, 0, 0, 180)) # Black with 180/255 alpha (around 70% opaque)
+        box_rect = box_surface.get_rect(center=menu_rect.center)
+        SCREEN.blit(box_surface, box_rect)
+
         SCREEN.blit(menu_text, menu_rect)
 
         # Create buttons with fixed size and adjusted positions
@@ -589,11 +616,60 @@ def main_menu():
                     song_selection_menu()
                     return
                 if endless_button.checkForInput(mouse_pos):
-                    start_endless_mode_song_selection() # Call the new endless song selection
-                    return
+                    coming_soon_panel() # Call the new coming soon panel function
                 if quit_button.checkForInput(mouse_pos):
                     pygame.quit()
                     sys.exit()
+
+        pygame.display.update()
+
+def coming_soon_panel():
+    """Displays a 'Coming Soon' panel."""
+    pygame.display.set_caption("Coming Soon")
+
+    # Create a semi-transparent overlay
+    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 180))
+
+    # Create the 'Coming Soon' text
+    coming_soon_text = font_manager.get_font(75).render("Coming Soon!", True, COLORS["WHITE"])
+    coming_soon_rect = coming_soon_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
+
+    # Create a 'Back' button
+    back_button = Button(
+        image=None,
+        pos=(SCREEN_WIDTH//2, SCREEN_HEIGHT - 100), # Position near the bottom
+        text_input="BACK",
+        font_size=75,
+        base_color=COLORS["WHITE"],
+        hovering_color=COLORS["RED"],
+        width=300,
+        height=80
+    )
+
+    while True:
+        mouse_pos = pygame.mouse.get_pos()
+
+        # Draw the previous screen's content (optional, for transition effect)
+        # Or just draw the overlay on a black screen
+        SCREEN.fill(COLORS["BLACK"])
+        SCREEN.blit(overlay, (0, 0))
+
+        # Draw 'Coming Soon' text
+        SCREEN.blit(coming_soon_text, coming_soon_rect)
+
+        # Update and draw back button
+        back_button.changeColor(mouse_pos)
+        back_button.update(SCREEN)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if back_button.checkForInput(mouse_pos):
+                    main_menu() # Go back to the main menu
+                    return # Exit this panel's loop
 
         pygame.display.update()
 

@@ -87,6 +87,8 @@ class Game:
         self.background_video = None
         if song_key == "song1":
             video_path = os.path.join('assets', 'vids', 'Song 1', 'song1.mp4')
+        elif song_key == "song2":
+            video_path = os.path.join('assets', 'vids', 'Song 2', 'song2.mp4')
         elif song_key == "song3":
             video_path = os.path.join('assets', 'vids', 'Song 3', 'song3.mp4')
         else:
