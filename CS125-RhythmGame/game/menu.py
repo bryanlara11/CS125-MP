@@ -1,3 +1,40 @@
+"""
+Menu System Module
+
+This module implements the game's menu system and user interface.
+It provides:
+- Main menu interface
+- Song selection
+- Difficulty settings
+- Game options
+- Visual feedback and transitions
+- User input handling for menu navigation
+
+The module creates an interactive menu system that allows players
+to navigate through different game options and start gameplay.
+
+Menu Structure:
+1. Main Menu
+   - Song Selection
+   - Endless Mode
+   - Coming Soon Features
+   - Quit Game
+
+2. Song Selection
+   - List of available songs
+   - Song details (title, artist)
+   - Difficulty selection
+
+3. Difficulty Selection
+   - Easy (120 BPM)
+   - Medium (140 BPM)
+   - Hard (160 BPM)
+
+4. Game Modes
+   - Normal Mode (song-based)
+   - Endless Mode (pattern-based)
+"""
+
 import pygame
 import sys
 import os
@@ -5,22 +42,22 @@ from Utility.font_manager import font_manager
 from game.game import Game
 from assets import outlines, arrows
 
-# Constants
+# Screen configuration
 SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 900
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-# UI Constants
+# UI color scheme for consistent visual design
 COLORS = {
-    "GOLD": "#b68f40",
-    "GREEN": "#d7fcd4",
-    "WHITE": "White",
-    "BLACK": "black",
-    "HOVER_GREEN": "#a0f5b0", 
-    "RED": "red" 
+    "GOLD": "#b68f40",      # Accent color for important elements
+    "GREEN": "#d7fcd4",     # Primary text color
+    "WHITE": "White",       # Secondary text color
+    "BLACK": "black",       # Background elements
+    "HOVER_GREEN": "#a0f5b0", # Interactive element hover state
+    "RED": "red"            # Warning/error states
 }
 
-# Song data
+# Song database containing all available songs and their properties
 SONGS = {
     "song1": {
         "title": "Realize (Re:Zero Opening 2)",
@@ -28,9 +65,9 @@ SONGS = {
         "music_file": "assets/songs/Song 1/audio/song1.mp3",
         "key_log_file": "assets/songs/Song 1/key_log.csv",
         "difficulty": {
-            "easy": {"bpm": 120},
-            "medium": {"bpm": 140},
-            "hard": {"bpm": 160}
+            "easy": {"bpm": 120},    # Slower tempo for beginners
+            "medium": {"bpm": 140},  # Moderate challenge
+            "hard": {"bpm": 160}     # Fast-paced gameplay
         }
     },
     "song2": {
@@ -54,13 +91,42 @@ SONGS = {
             "medium": {"bpm": 140},
             "hard": {"bpm": 160}
         },
-        "volume": 1.0
+        "volume": 1.0  # Custom volume setting for this song
     }
-    # Add more songs here
 }
 
 class Button:
+    """
+    Interactive button class for menu navigation.
+    
+    Features:
+    - Dynamic sizing based on content
+    - Hover effects
+    - Multi-line text support
+    - Custom styling
+    - Click detection
+    
+    The button system provides:
+    - Visual feedback on interaction
+    - Consistent styling across menus
+    - Flexible layout options
+    - Accessible user interface
+    """
+    
     def __init__(self, image, pos, text_input, font_size, base_color, hovering_color, width=None, height=None):
+        """
+        Initialize a button with specified properties.
+        
+        Args:
+            image: Optional background image
+            pos: (x, y) position on screen
+            text_input: Button text (supports multiple lines with \n)
+            font_size: Text size
+            base_color: Normal state color
+            hovering_color: Hover state color
+            width: Optional fixed width
+            height: Optional fixed height
+        """
         self.image = image
         self.x_pos = pos[0]
         self.y_pos = pos[1]
@@ -71,22 +137,21 @@ class Button:
         self.width = width
         self.height = height
 
-        # Define standard button dimensions if none are provided
+        # Standard button dimensions for consistency
         standard_width = 350
         standard_height = 90
 
-        # Use fixed width and height if provided, otherwise use standard, otherwise calculate with padding
+        # Calculate button dimensions based on content or use standard size
         if self.width is not None and self.height is not None:
             button_width = self.width
             button_height = self.height
-        elif image is None: # Apply standard size only if no image is used
-             button_width = standard_width
-             button_height = standard_height
+        elif image is None:
+            button_width = standard_width
+            button_height = standard_height
         else:
-            # Define padding around the text
+            # Calculate size based on text content
             padding_x = 30
             padding_y = 20
-            # Calculate size based on potentially multiple lines of text
             lines = self.text_input.split('\n')
             max_width = 0
             total_height = 0
@@ -98,34 +163,21 @@ class Button:
             button_width = max_width + 2 * padding_x
             button_height = total_height + 2 * padding_y
             
+        # Create button surface if no image provided
         if self.image is None:
-            # Calculate size based on potentially multiple lines of text if not already done
-            if self.width is None and self.height is None:
-                 lines = self.text_input.split('\n')
-                 max_width = 0
-                 total_height = 0
-                 for line in lines:
-                     line_surface = self.font.render(line, True, self.base_color)
-                     max_width = max(max_width, line_surface.get_width())
-                     total_height += line_surface.get_height()
-
-                 button_width = max_width + 2 * padding_x
-                 button_height = total_height + 2 * padding_y
-
             self.image = pygame.Surface((button_width, button_height), pygame.SRCALPHA)
             
-            # Draw the button shape (a simple rounded rectangle for a start)
-            button_color = (50, 50, 50, 180) # Dark gray with some transparency
-            border_color = (200, 200, 200) # Light gray border
+            # Draw button with modern styling
+            button_color = (50, 50, 50, 180)  # Semi-transparent dark gray
+            border_color = (200, 200, 200)    # Light gray border
             border_width = 3
             border_radius = 10
             
-            # Draw the filled rectangle
+            # Draw button background and border
             pygame.draw.rect(self.image, button_color, (0, 0, button_width, button_height), border_radius=border_radius)
-            # Draw the border
             pygame.draw.rect(self.image, border_color, (0, 0, button_width, button_height), border_width, border_radius=border_radius)
 
-            # Blit the text onto the button image (handle multiple lines)
+            # Render text with proper centering
             lines = self.text_input.split('\n')
             current_y = (button_height - sum(self.font.render(line, True, self.base_color).get_height() for line in lines)) // 2
             for line in lines:
@@ -134,44 +186,64 @@ class Button:
                 self.image.blit(line_surface, line_rect)
                 current_y += line_surface.get_height()
 
+        # Set button position
         self.rect = self.image.get_rect(center=(self.x_pos, self.y_pos))
-        # We don't need a separate text_rect anymore as text is part of the image
-        # self.text_rect = self.text.get_rect(center=self.rect.center) # Keep for consistency if needed elsewhere, but text is drawn on image
 
-    # The update method remains the same as it blits the button's surface (self.image)
     def update(self, screen):
+        """
+        Draw the button on the screen.
+        
+        Args:
+            screen: Pygame surface to draw on
+        """
         screen.blit(self.image, self.rect)
-        # No need to blit self.text separately anymore
-        # screen.blit(self.text, self.text_rect)
 
     def checkForInput(self, position):
-        if position[0] in range(self.rect.left, self.rect.right) and position[1] in range(self.rect.top, self.rect.bottom):
-            return True
-        return False
+        """
+        Check if a position is within the button's bounds.
+        
+        Args:
+            position: (x, y) coordinates to check
+            
+        Returns:
+            bool: True if position is within button bounds
+        """
+        return (position[0] in range(self.rect.left, self.rect.right) and 
+                position[1] in range(self.rect.top, self.rect.bottom))
 
-    # Modify changeColor to update the appearance of the drawn button
     def changeColor(self, position):
-        is_now_hovering = position[0] in range(self.rect.left, self.rect.right) and position[1] in range(self.rect.top, self.rect.bottom)
+        """
+        Update button appearance based on hover state.
+        
+        This method:
+        1. Checks if mouse is over button
+        2. Updates visual state
+        3. Redraws button with appropriate colors
+        
+        Args:
+            position: Current mouse position
+        """
+        is_now_hovering = self.checkForInput(position)
 
         if is_now_hovering != self.is_hovering:
             self.is_hovering = is_now_hovering
             # Re-render the button image with the appropriate text color
             text_color = self.hovering_color if self.is_hovering else self.base_color
 
-            # Redraw the button background and border using potentially fixed size
+            # Redraw button with updated colors
             button_width, button_height = self.image.get_size()
-
             self.image = pygame.Surface((button_width, button_height), pygame.SRCALPHA)
             
-            button_color = (50, 50, 50, 180) # Dark gray with some transparency
-            border_color = (255, 0, 0) if self.is_hovering else (200, 200, 200) # Red border on hover, light gray otherwise
+            button_color = (50, 50, 50, 180)
+            border_color = (255, 0, 0) if self.is_hovering else (200, 200, 200)
             border_width = 3
             border_radius = 10
 
+            # Draw updated button
             pygame.draw.rect(self.image, button_color, (0, 0, button_width, button_height), border_radius=border_radius)
             pygame.draw.rect(self.image, border_color, (0, 0, button_width, button_height), border_width, border_radius=border_radius)
 
-            # Blit the text onto the button image (handle multiple lines)
+            # Update text with new color
             lines = self.text_input.split('\n')
             current_y = (button_height - sum(self.font.render(line, True, self.base_color).get_height() for line in lines)) // 2
             for line in lines:
@@ -180,61 +252,74 @@ class Button:
                 self.image.blit(line_surface, line_rect)
                 current_y += line_surface.get_height()
 
-    # Keep the original changeColor logic as a reference if needed
-    # def changeColor(self, position):
-    #     if position[0] in range(self.rect.left, self.rect.right) and position[1] in range(self.rect.top, self.rect.bottom):
-    #         if not self.is_hovering:
-    #             self.text = self.font.render(self.text_input, True, self.hovering_color)
-    #             self.is_hovering = True
-    #     else:
-    #         if self.is_hovering:
-    #             self.text = self.font.render(self.text_input, True, self.base_color)
-    #             self.is_hovering = False
-
 def start_game(song_key, difficulty, mode="normal"):
-    """Start the rhythm game with selected song, difficulty, and mode."""
-    # Initialize pygame mixer if not already initialized
+    """
+    Initialize and start the rhythm game.
+    
+    This function:
+    1. Sets up the game environment
+    2. Initializes audio
+    3. Creates game instance
+    4. Handles game flow
+    5. Manages navigation after game ends
+    
+    Args:
+        song_key: Key of selected song
+        difficulty: Game difficulty level
+        mode: Game mode (normal/endless)
+    """
+    # Initialize audio system
     if not pygame.mixer.get_init():
         pygame.mixer.init()
         
+    # Create and run game instance
     game = Game(outlines, arrows, SONGS, song_key, difficulty, mode)
     next_action = game.run()
     
-    # Clean up resources before any navigation
+    # Clean up game resources
     game.cleanup()
     
-    # After game ends, navigate based on the returned action
+    # Handle post-game navigation
     if mode == "normal":
         if next_action == 'restart':
-            # Small delay to ensure resources are properly cleaned up
-            pygame.time.wait(100)
-            start_game(song_key, difficulty, mode) # Restart the same game
+            pygame.time.wait(100)  # Brief delay for cleanup
+            start_game(song_key, difficulty, mode)
         elif next_action == 'difficulty_select':
+<<<<<<< HEAD
             pattern_selection(song_key) # Go back to difficulty selection for the same song
         elif next_action == 'difficulty_select_current_song':
             pattern_selection(song_key) # Go back to difficulty selection for the song that just finished
         else: # Covers 'quit' or None (window close)
             main_menu() # Go back to the main menu
+=======
+            pattern_selection(song_key)
+        else:
+            main_menu()
+>>>>>>> 308b7d78e22dc19b351b074295be6365ca593058
     elif mode == "endless":
         if next_action == 'restart_endless':
-            # Small delay to ensure resources are properly cleaned up
             pygame.time.wait(100)
-            start_game(song_key, difficulty, mode) # Restart endless mode with same song
-        else: # Covers 'quit' or None (window close)
-            main_menu() # Go back to the main menu
-    
-    # The return in the menu functions will handle actually returning to the game loop
-    # return # No longer needed as menu functions handle navigation
+            start_game(song_key, difficulty, mode)
+        else:
+            main_menu()
 
 def song_selection_menu():
-    """Song selection screen."""
+    """
+    Display the song selection screen.
+    
+    This screen:
+    1. Lists available songs
+    2. Shows song details
+    3. Handles song selection
+    4. Provides navigation options
+    """
     pygame.display.set_caption("Select Song")
 
-    # Populate songs_list from the SONGS dictionary
+    # Create list of available songs
     songs_list = [
         {"key": key, "title": song_info["title"], "artist": song_info.get("artist", "Unknown Artist")}
         for key, song_info in SONGS.items()
-        if "title" in song_info # Ensure title exists
+        if "title" in song_info
     ]
 
     # Check if there are any songs available

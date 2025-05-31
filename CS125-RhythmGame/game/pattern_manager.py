@@ -1,3 +1,18 @@
+"""
+Pattern Manager Module
+
+This module manages the arrow patterns and sequences in the rhythm game.
+It handles:
+- Pattern generation and storage
+- Timing synchronization
+- Difficulty scaling
+- Pattern playback control
+- Integration with arrow spawner
+
+The module ensures that arrow patterns are properly synchronized
+with the music and maintains the game's rhythm mechanics.
+"""
+
 import queue
 import threading
 import random
