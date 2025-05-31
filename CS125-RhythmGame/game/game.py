@@ -476,14 +476,19 @@ class Game:
             self.paused = True
             # Store the current game state
             self.pause_time = pygame.time.get_ticks() - self.start_ticks
-            # Store current music position only if music is still playing
+            
+            # Pause music if it's playing
             try:
                 if self.music_started and pygame.mixer.music.get_busy():
                     self.music_position = pygame.mixer.music.get_pos() / 1000.0
                     audio_manager.pause_music()
             except:
-                # If music has already ended, just continue
                 pass
+                
+            # Pause video if it's active
+            if self.background_video and self.background_video.active:
+                self.background_video.toggle_pause()
+            
             # Capture the current frame for pause background
             self.pause_frame = self.display.copy()
             self.init_pause_popup()
@@ -493,13 +498,17 @@ class Game:
             self.paused = False
             # Adjust start_ticks to maintain the same elapsed time
             self.start_ticks = pygame.time.get_ticks() - self.pause_time
-            # Resume music only if it was playing when paused
+            
+            # Resume music if it was playing
             try:
                 if self.music_started and hasattr(self, 'music_position'):
                     audio_manager.unpause_music()
             except:
-                # If unpause fails, don't try to restart the music
                 pass
+                
+            # Resume video if it was active
+            if self.background_video and not self.background_video.active:
+                self.background_video.toggle_pause()
 
     def init_pause_popup(self):
         center_x = WINDOW_WIDTH // 2
