@@ -98,8 +98,8 @@ class Game:
                 self.background_video = Video(video_path)
                 # Optionally resize the video to fit the screen
                 self.background_video.set_size((WINDOW_WIDTH, WINDOW_HEIGHT))
-                # Set video transparency to 20% opacity
-                self.background_video.set_transparency(51)  # 255 * 0.2 = 51
+                # Set video transparency to 10% opacity (reduced from 20%)
+                self.background_video.set_transparency(26)  # 255 * 0.1 = 26
                 # Pause the video immediately
                 self.background_video.toggle_pause()
             except FileNotFoundError:
@@ -382,15 +382,19 @@ class Game:
         elapsed_ms = pygame.time.get_ticks() - self.start_ticks
         elapsed_sec = elapsed_ms / 1000
 
+        # Clear the screen completely before drawing
+        self.display.fill((0, 0, 0))  # Fill with black
+
         # Draw background video if not paused or showing results and after delay
         if not self.paused and not self.show_results and self.background_video and elapsed_sec >= VIDEO_START_DELAY:
-            self.background_video.draw(self.display, (0, 0))
-        elif not self.paused and not self.show_results and elapsed_sec < VIDEO_START_DELAY:
-            # Draw black background before video starts
-            self.display.fill((0, 0, 0)) # Fill with black
-        else:
-            # Clear screen with background color if no video or paused/results
-            self.display.blit(self.background, (0, 0))
+            # Create a temporary surface for the video
+            video_surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+            self.background_video.draw(video_surface, (0, 0))
+            self.display.blit(video_surface, (0, 0))
+
+        # Draw game elements
+        self.outline_group.draw(self.display)
+        self.arrow_group.draw(self.display)
 
         # Draw score
         score_text = self.font.render(f"Score: {self.hit_detector.score}", True, (0, 0, 255))
@@ -404,10 +408,6 @@ class Game:
         if self.hit_detector.combo > 0:
             combo_text = self.combo_font.render(f"{self.hit_detector.combo} Combo", True, (255, 165, 0))
             self.display.blit(combo_text, COMBO_POSITION)
-
-        # Draw game elements
-        self.outline_group.draw(self.display)
-        self.arrow_group.draw(self.display)
 
         # Show hit feedback if active
         if self.hit_detector.hit_feedback:
