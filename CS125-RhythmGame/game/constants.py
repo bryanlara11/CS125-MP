@@ -64,7 +64,7 @@ DIFFICULTY_SPEEDS = {
 """Timing and spawn window settings in seconds."""
 SPAWN_WINDOW = 1.55
 MUSIC_START_DELAY = 5.0
-VIDEO_START_DELAY = 5.0
+VIDEO_START_DELAY = 4.4
 
 # Arrow and outline spacing
 """Horizontal spacing between game elements in pixels."""

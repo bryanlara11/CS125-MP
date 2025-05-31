@@ -37,12 +37,13 @@ from game.pyvidplayer import Video
 # from game.menu import SONGS
 
 class Game:
-    def __init__(self, outlines, arrows, songs_data, song_key="song1", difficulty="easy", mode="normal"):
+    def __init__(self, outlines, arrows, songs_data, song_key="song1", difficulty="easy"):
         # Initialize pygame components
         pygame.mixer.init()
         
-        # Store songs data
+        # Store songs data and current song info
         self.songs_data = songs_data
+        self.song_info = self.songs_data.get(song_key, {})
 
         # Set up display (already initialized in main.py)
         self.display = pygame.display.get_surface()
@@ -58,11 +59,10 @@ class Game:
         self.outline_manager = OutlineManager(outlines)
         
         # Set up music
-        # Get music file path from songs_data dictionary
-        song_info = self.songs_data.get(song_key)
-        if song_info and "music_file" in song_info:
-            self.music_path = os.path.join(song_info["music_file"])
-            self.music_volume = song_info.get("volume", None)
+        # Get music file path and volume from song_info dictionary
+        if self.song_info and "music_file" in self.song_info:
+            self.music_path = os.path.join(self.song_info["music_file"])
+            self.music_volume = self.song_info.get("volume", None)
         else:
             self.music_path = None # Or set a default error sound
             self.music_volume = None
@@ -96,11 +96,13 @@ class Game:
         self.pause_buttons = []
         self.pause_font = font_manager.get_font(72)
         self.pause_small_font = font_manager.get_font(48)
-        self.mode = mode
         self.next_action = None
 
         # Load background video
         self.background_video = None
+        # video_path = self.song_info.get("video_file") # Reverted this line
+
+        # Reverted video path logic back to original
         if song_key == "song1":
             video_path = os.path.join('assets', 'vids', 'Song 1', 'song1.mp4')
         elif song_key == "song2":
@@ -109,6 +111,16 @@ class Game:
             video_path = os.path.join('assets', 'vids', 'Song 3', 'song3.mp4')
         else:
             video_path = None
+
+        # Get video start delay from song info or use default - Keep this line to use custom delay if present in song_info
+        # Check if the custom delay exists in song_info, otherwise use the default constant
+        if "VIDEO_START_DELAY" in self.song_info:
+            self.video_start_delay = self.song_info["VIDEO_START_DELAY"]
+            print(f"[DEBUG] Using custom video delay: {self.video_start_delay}")
+        else:
+            self.video_start_delay = VIDEO_START_DELAY
+            print(f"[DEBUG] Using default video delay: {self.video_start_delay}")
+
         if video_path is not None:
             try:
                 self.background_video = Video(video_path)
@@ -138,10 +150,7 @@ class Game:
         if song_key == "pattern":
             self.arrow_spawner.start_pattern_mode(difficulty)
         else:
-            if self.mode == "normal":
-                self.arrow_spawner.add_timestamps(song_key)
-            else:
-                self.arrow_spawner.add_timestamps(song_key)
+            self.arrow_spawner.add_timestamps(song_key)
 
         # Initialize hit zones based on difficulty
         if self.difficulty == "medium" or self.difficulty == "hard":
@@ -190,8 +199,9 @@ class Game:
                 print(f"[ERROR] Failed to play music: {e}")
 
         # Unpause video after delay if it's paused
-        if self.background_video and self.background_video.get_playback_data()['paused'] and elapsed_sec >= VIDEO_START_DELAY:
-             self.background_video.toggle_pause()
+        if self.background_video and self.background_video.get_playback_data()['paused'] and elapsed_sec >= self.video_start_delay:
+            print(f"[DEBUG] Unpausing video at {elapsed_sec}s (delay: {self.video_start_delay}s)")
+            self.background_video.toggle_pause()
 
         # Update video frames if game is running and video is active
         if not self.paused and not self.show_results and self.background_video and self.background_video.active:
@@ -212,10 +222,30 @@ class Game:
                 self.init_results_popup()
             return
 
-        # Detect end of song (music stopped) - only in normal mode
-        if self.mode == "normal":
-            # Show results if music ends
-            if self.music_started and not pygame.mixer.music.get_busy() and not self.waiting_for_results and not self.paused:
+        # Detect end of song or video or no more arrows
+        # Show results if music ends
+        if self.music_started and not pygame.mixer.music.get_busy() and not self.waiting_for_results and not self.paused:
+            self.final_score = self.hit_detector.score
+            self.final_time = elapsed_sec
+            self.song_end_time = pygame.time.get_ticks()
+            self.last_frame = self.display.copy()
+            self.waiting_for_results = True
+            self.arrow_group.empty()
+            self.arrow_spawner.spawning_allowed = False
+            return
+        # Show results if video ends
+        if self.background_video and not self.background_video.active and not self.waiting_for_results and not self.paused:
+            self.final_score = self.hit_detector.score
+            self.final_time = elapsed_sec
+            self.song_end_time = pygame.time.get_ticks()
+            self.last_frame = self.display.copy()
+            self.waiting_for_results = True
+            self.arrow_group.empty()
+            self.arrow_spawner.spawning_allowed = False
+            return
+        # Show results if all arrows have been processed and no more arrows to spawn (for songs without music/video)
+        if (not self.music_path or not self.background_video) and not self.waiting_for_results and not self.paused:
+            if len(self.arrow_group) == 0 and self.arrow_spawner.spawn_queue.empty():
                 self.final_score = self.hit_detector.score
                 self.final_time = elapsed_sec
                 self.song_end_time = pygame.time.get_ticks()
@@ -224,27 +254,6 @@ class Game:
                 self.arrow_group.empty()
                 self.arrow_spawner.spawning_allowed = False
                 return
-            # Show results if video ends
-            if self.background_video and not self.background_video.active and not self.waiting_for_results and not self.paused:
-                self.final_score = self.hit_detector.score
-                self.final_time = elapsed_sec
-                self.song_end_time = pygame.time.get_ticks()
-                self.last_frame = self.display.copy()
-                self.waiting_for_results = True
-                self.arrow_group.empty()
-                self.arrow_spawner.spawning_allowed = False
-                return
-            # Show results if all arrows have been processed and no more arrows to spawn
-            if (not self.music_path or not self.background_video) and not self.waiting_for_results and not self.paused:
-                if len(self.arrow_group) == 0 and self.arrow_spawner.spawn_queue.empty():
-                    self.final_score = self.hit_detector.score
-                    self.final_time = elapsed_sec
-                    self.song_end_time = pygame.time.get_ticks()
-                    self.last_frame = self.display.copy()
-                    self.waiting_for_results = True
-                    self.arrow_group.empty()
-                    self.arrow_spawner.spawning_allowed = False
-                    return
 
         # Update arrow positions and check for misses
         for arrow in list(self.arrow_group.sprites()):  # Create a copy of the sprite list
@@ -271,41 +280,26 @@ class Game:
         # Centered popup with score and 3 buttons
         center_x = WINDOW_WIDTH // 2
         center_y = WINDOW_HEIGHT // 2
-        button_gap = 90
+        button_gap = 100
 
-        # Define buttons based on mode
-        if self.mode == "normal":
-            self.results_buttons = [
-                {
-                    'label': 'RESTART',
-                    'rect': pygame.Rect(center_x-150, center_y+40, 300, 70),
-                    'hover': False
-                },
-                {
-                    'label': 'DIFFICULTY',
-                    'rect': pygame.Rect(center_x-150, center_y+40+button_gap, 300, 70),
-                    'hover': False
-                },
-                {
-                    'label': 'QUIT',
-                    'rect': pygame.Rect(center_x-150, center_y+40+2*button_gap, 300, 70),
-                    'hover': False
-                }
-            ]
-        # In endless mode, define a different set of buttons, maybe just QUIT and RESTART Endless
-        elif self.mode == "endless":
-             self.results_buttons = [
-                {
-                    'label': 'RESTART ENDLESS',
-                    'rect': pygame.Rect(center_x-150, center_y+40, 300, 70),
-                    'hover': False
-                },
-                {
-                    'label': 'QUIT',
-                    'rect': pygame.Rect(center_x-150, center_y+40+button_gap, 300, 70),
-                    'hover': False
-                }
-             ]
+        # Define buttons for normal mode
+        self.results_buttons = [
+            {
+                'label': 'RESTART',
+                'rect': pygame.Rect(center_x-150, center_y+40, 300, 70),
+                'hover': False
+            },
+            {
+                'label': 'DIFFICULTY',
+                'rect': pygame.Rect(center_x-150, center_y+40+button_gap, 300, 70),
+                'hover': False
+            },
+            {
+                'label': 'QUIT',
+                'rect': pygame.Rect(center_x-150, center_y+40+2*button_gap, 300, 70),
+                'hover': False
+            }
+        ]
 
     def draw_results_popup(self):
         # Dim background
@@ -346,41 +340,27 @@ class Game:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for btn in self.results_buttons:
                     if btn['hover']:
-                        # Handle button actions based on mode
-                        if self.mode == "normal":
-                            if btn['label'] == 'RESTART':
-                                # Restart the current song and difficulty
-                                self.running = False # Stop the current game instance
-                                # The start_game function in menu.py will be called after this instance ends
-                                # with the same song_key and difficulty
-                                self.next_action = 'restart'
-                            elif btn['label'] == 'DIFFICULTY':
-                                # Go back to difficulty selection for the current song
-                                self.running = False # Stop the current game instance
-                                # Signal to the main menu to go back to difficulty selection for this song
-                                self.next_action = 'difficulty_select_current_song' # Set a specific action
-                                # The menu.py will read this action and call pattern_selection(self.song_key)
-                                # For now, we'll just go back to main menu as a temporary measure.
-                                # TODO: Implement proper return to difficulty selection.
-                                # For now, setting running to False and letting menu handle the return
-                            elif btn['label'] == 'QUIT':
-                                self.running = False # Stop the current game instance
-                                # The main_menu will be called after this instance ends.
-                                self.next_action = 'quit'
-                        elif self.mode == "endless":
-                             if btn['label'] == 'RESTART ENDLESS':
-                                 # Restart endless mode with the same song
-                                 self.running = False
-                                 # start_game with endless mode and same song will be called from menu
-                                 self.next_action = 'restart_endless'
-                             elif btn['label'] == 'QUIT':
-                                 self.running = False
-                                 # main_menu will be called from menu
+                        if btn['label'] == 'RESTART':
+                            # Restart the current song and difficulty
+                            self.running = False # Stop the current game instance
+                            # The start_game function in menu.py will be called after this instance ends
+                            # with the same song_key and difficulty
+                            self.next_action = 'restart'
+                        elif btn['label'] == 'DIFFICULTY':
+                            # Go back to difficulty selection for the current song
+                            self.running = False # Stop the current game instance
+                            # Signal to the main menu to go back to difficulty selection for this song
+                            self.next_action = 'difficulty_select_current_song' # Set a specific action
+                            # The menu.py will read this action and call pattern_selection(self.song_key)
+                        elif btn['label'] == 'QUIT':
+                            self.running = False # Stop the current game instance
+                            # The main_menu will be called after this instance ends.
+                            self.next_action = 'quit'
                         return # Exit event handling after a button is pressed
 
     def draw(self):
-        # If results popup is showing, blit the last frame and return - only in normal mode
-        if self.mode == "normal" and self.show_results:
+        # If results popup is showing, blit the last frame and return
+        if self.show_results:
             if self.last_frame is not None:
                 self.display.blit(self.last_frame, (0, 0))
             # Always draw the popup on top
@@ -400,7 +380,8 @@ class Game:
         self.display.fill((0, 0, 0))  # Fill with black
 
         # Draw background video if not paused or showing results and after delay
-        if not self.paused and not self.show_results and self.background_video and elapsed_sec >= VIDEO_START_DELAY:
+        if not self.paused and not self.show_results and self.background_video and elapsed_sec >= self.video_start_delay:
+            print(f"[DEBUG] Drawing video at {elapsed_sec}s (delay: {self.video_start_delay}s)")
             # Create a temporary surface for the video
             video_surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
             self.background_video.draw(video_surface, (0, 0))
@@ -631,7 +612,7 @@ class Game:
         
         while self.running:
             # Only show results popup in normal mode
-            if self.mode == "normal" and self.show_results: # Add mode check
+            if self.show_results: # Add mode check
                 self.handle_results_popup_events()
                 self.draw()
                 self.draw_results_popup()
@@ -648,7 +629,7 @@ class Game:
                 continue
             
             self.handle_events()
-            # Only update game state if not showing results (which won't happen in endless mode anyway)
+            # Only update game state if not showing results
             if not self.show_results:
                 self.update()
             

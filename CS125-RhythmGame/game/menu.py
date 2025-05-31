@@ -16,7 +16,6 @@ to navigate through different game options and start gameplay.
 Menu Structure:
 1. Main Menu
    - Song Selection
-   - Endless Mode
    - Coming Soon Features
    - Quit Game
 
@@ -32,7 +31,6 @@ Menu Structure:
 
 4. Game Modes
    - Normal Mode (song-based)
-   - Endless Mode (pattern-based)
 """
 
 import pygame
@@ -91,7 +89,8 @@ SONGS = {
             "medium": {"bpm": 140},
             "hard": {"bpm": 160}
         },
-        "volume": 1.0  # Custom volume setting for this song
+        "volume": 1.0,  # Custom volume setting for this song
+        "VIDEO_START_DELAY" : 5.0 #Custom video start delay for this song
     }
 }
 
@@ -208,7 +207,7 @@ class Button:
         Returns:
             bool: True if position is within button bounds
         """
-        return (position[0] in range(self.rect.left, self.rect.right) and 
+        return (position[0] in range(self.rect.left, self.rect.right) and
                 position[1] in range(self.rect.top, self.rect.bottom))
 
     def changeColor(self, position):
@@ -252,7 +251,7 @@ class Button:
                 self.image.blit(line_surface, line_rect)
                 current_y += line_surface.get_height()
 
-def start_game(song_key, difficulty, mode="normal"):
+def start_game(song_key, difficulty):
     """
     Initialize and start the rhythm game.
     
@@ -266,42 +265,28 @@ def start_game(song_key, difficulty, mode="normal"):
     Args:
         song_key: Key of selected song
         difficulty: Game difficulty level
-        mode: Game mode (normal/endless)
     """
     # Initialize audio system
     if not pygame.mixer.get_init():
         pygame.mixer.init()
         
     # Create and run game instance
-    game = Game(outlines, arrows, SONGS, song_key, difficulty, mode)
+    game = Game(outlines, arrows, SONGS, song_key, difficulty)
     next_action = game.run()
     
     # Clean up game resources
     game.cleanup()
     
     # Handle post-game navigation
-    if mode == "normal":
-        if next_action == 'restart':
-            pygame.time.wait(100)  # Brief delay for cleanup
-            start_game(song_key, difficulty, mode)
-        elif next_action == 'difficulty_select':
-<<<<<<< HEAD
-            pattern_selection(song_key) # Go back to difficulty selection for the same song
-        elif next_action == 'difficulty_select_current_song':
-            pattern_selection(song_key) # Go back to difficulty selection for the song that just finished
-        else: # Covers 'quit' or None (window close)
-            main_menu() # Go back to the main menu
-=======
-            pattern_selection(song_key)
-        else:
-            main_menu()
->>>>>>> 308b7d78e22dc19b351b074295be6365ca593058
-    elif mode == "endless":
-        if next_action == 'restart_endless':
-            pygame.time.wait(100)
-            start_game(song_key, difficulty, mode)
-        else:
-            main_menu()
+    if next_action == 'restart':
+        pygame.time.wait(100)  # Brief delay for cleanup
+        start_game(song_key, difficulty)
+    elif next_action == 'difficulty_select':
+        pattern_selection(song_key) # Go back to difficulty selection for the same song
+    elif next_action == 'difficulty_select_current_song':
+        pattern_selection(song_key) # Go back to difficulty selection for the song that just finished
+    else: # Covers 'quit' or None (window close)
+        main_menu() # Go back to the main menu
 
 def song_selection_menu():
     """
@@ -402,7 +387,7 @@ def song_selection_menu():
         SCREEN.blit(title_text, title_rect)
 
         # Update the text of the single song button
-        song_button.text_input = f"{current_song['title'].upper()}\n{current_song['artist'].upper()}"
+        song_button.text_input = f"{current_song['title'].upper()}\n{current_song.get('artist', 'Unknown Artist').upper()}"
         # Re-render the song button to update its text and appearance
         song_button.changeColor(mouse_pos) # This also handles hover color change
         song_button.update(SCREEN)
@@ -433,7 +418,7 @@ def song_selection_menu():
                     song_button = Button(
                         image=None,
                         pos=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2), # Maintain centered position
-                        text_input=f"{current_song['title'].upper()}\n{current_song['artist'].upper()}",
+                        text_input=f"{current_song['title'].upper()}\n{current_song.get('artist', 'Unknown Artist').upper()}",
                         font_size=40, # Adjusted font size
                         base_color=COLORS["WHITE"],
                         hovering_color=COLORS["RED"],
@@ -448,7 +433,7 @@ def song_selection_menu():
                     song_button = Button(
                         image=None,
                         pos=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2), # Maintain centered position
-                        text_input=f"{current_song['title'].upper()}\n{current_song['artist'].upper()}",
+                        text_input=f"{current_song['title'].upper()}\n{current_song.get('artist', 'Unknown Artist').upper()}",
                         font_size=40, # Adjusted font size
                         base_color=COLORS["WHITE"],
                         hovering_color=COLORS["RED"],
@@ -568,48 +553,6 @@ def pattern_selection(selected_song):
                     song_selection_menu()
                     return
 
-        pygame.display.update()
-
-def endless():
-    """Endless mode screen."""
-    pygame.display.set_caption("Endless")
-    
-    # Define fixed button height and gap
-    button_height = 90
-    button_gap = 30
-
-    while True:
-        mouse_pos = pygame.mouse.get_pos()
-        SCREEN.fill(COLORS["BLACK"])
-        
-        # Mode title
-        endless_text = font_manager.get_font(100).render("ENDLESS", True, COLORS["GOLD"])
-        endless_rect = endless_text.get_rect(center=(SCREEN_WIDTH//2, 250))
-        SCREEN.blit(endless_text, endless_rect)
-        
-        # Back button
-        back_button = Button(
-            image=None,
-            pos=(SCREEN_WIDTH//2, 400), # Adjusted position
-            text_input="BACK",
-            font_size=75,
-            base_color=COLORS["WHITE"],
-            hovering_color=COLORS["RED"],
-            width=350, # Fixed width
-            height=button_height # Fixed height
-        )
-
-        back_button.changeColor(mouse_pos)
-        back_button.update(SCREEN)
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_button.checkForInput(mouse_pos):
-                    main_menu()
-        
         pygame.display.update()
 
 def main_menu():
@@ -759,158 +702,3 @@ def coming_soon_panel():
                     return # Exit this panel's loop
 
         pygame.display.update()
-
-def start_endless_mode_song_selection():
-    """Song selection screen for Endless Mode."""
-    pygame.display.set_caption("Select Song (Endless)")
-
-    # Populate songs_list from the SONGS dictionary
-    songs_list = [
-        {"key": key, "title": song_info["title"], "artist": song_info.get("artist", "Unknown Artist")}
-        for key, song_info in SONGS.items()
-        if "title" in song_info # Ensure title exists
-    ]
-
-    # Check if there are any songs available
-    if not songs_list:
-        print("[ERROR] No songs found in SONGS dictionary.")
-        main_menu()
-        return
-
-    # Scrolling state variable
-    current_song_index = 0
-    
-    # Define button dimensions and gap
-    song_button_width = 900 # Much wider button for song title
-    song_button_height = 200 # Adjusted height
-    arrow_button_width = 80
-    arrow_button_height = 50
-    horizontal_gap = 50 # Gap between song button and arrow buttons
-
-    # Create the single song button
-    song_button = Button(
-        image=None,
-        pos=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2), # Centered vertically and horizontally
-        text_input="", # Text will be updated dynamically
-        font_size=40, # Adjusted font size for larger button
-        base_color=COLORS["WHITE"],
-        hovering_color=COLORS["RED"],
-        width=song_button_width,
-        height=song_button_height
-    )
-
-    # Create scroll buttons positioned to the sides of the large song button
-    up_arrow_button = Button(
-        image=None,
-        pos=(SCREEN_WIDTH//2 - song_button_width // 2 - horizontal_gap - arrow_button_width // 2, SCREEN_HEIGHT//2 - arrow_button_height // 2), # Position to the left, vertically centered
-        text_input="UP", # Could use an image later
-        font_size=50,
-        base_color=COLORS["WHITE"],
-        hovering_color=COLORS["RED"],
-        width=arrow_button_width,
-        height=arrow_button_height
-    )
-
-    down_arrow_button = Button(
-        image=None,
-        pos=(SCREEN_WIDTH//2 + song_button_width // 2 + horizontal_gap + arrow_button_width // 2, SCREEN_HEIGHT//2 - arrow_button_height // 2), # Position to the right, vertically centered
-        text_input="DOWN", # Could use an image later
-        font_size=50,
-        base_color=COLORS["WHITE"],
-        hovering_color=COLORS["RED"],
-        width=arrow_button_width,
-        height=arrow_button_height
-    )
-    
-    # Back button remains at the bottom
-    back_button = Button(
-        image=None,
-        pos=(SCREEN_WIDTH//2, SCREEN_HEIGHT - 100), # Position near the bottom
-        text_input="BACK",
-        font_size=75,
-        base_color=COLORS["WHITE"],
-        hovering_color=COLORS["RED"],
-        width=300, # Slightly smaller back button
-        height=80
-    )
-
-    while True:
-        mouse_pos = pygame.mouse.get_pos()
-        SCREEN.fill(COLORS["BLACK"])
-
-        # Get the current song info
-        current_song = songs_list[current_song_index]
-
-        # Display the consistent menu title
-        title_text = font_manager.get_font(100).render("SELECT SONG", True, COLORS["GOLD"])
-        title_rect = title_text.get_rect(center=(SCREEN_WIDTH//2, 100))
-        SCREEN.blit(title_text, title_rect)
-
-        # Update the text of the single song button
-        song_button.text_input = f"{current_song["title"].upper()}\n{current_song.get("artist", "Unknown Artist").upper()}"
-        # Re-render the song button to update its text and appearance
-        song_button.changeColor(mouse_pos) # This also handles hover color change
-        song_button.update(SCREEN)
-
-        # Update and draw scroll buttons conditionally
-        if current_song_index > 0:
-            up_arrow_button.changeColor(mouse_pos)
-            up_arrow_button.update(SCREEN)
-
-        if current_song_index < len(songs_list) - 1:
-            down_arrow_button.changeColor(mouse_pos)
-            down_arrow_button.update(SCREEN)
-
-        # Update and draw back button
-        back_button.changeColor(mouse_pos)
-        back_button.update(SCREEN)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                # Check scroll button input only if visible
-                if current_song_index > 0 and up_arrow_button.checkForInput(mouse_pos):
-                    current_song_index -= 1
-                    # Force re-render of the song button with new text
-                    current_song = songs_list[current_song_index]
-                    song_button = Button(
-                        image=None,
-                        pos=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2), # Maintain centered position
-                        text_input=f"{current_song["title"].upper()}\n{current_song.get("artist", "Unknown Artist").upper()}",
-                        font_size=40, # Adjusted font size
-                        base_color=COLORS["WHITE"],
-                        hovering_color=COLORS["RED"],
-                        width=song_button_width,
-                        height=song_button_height
-                    )
-                
-                if current_song_index < len(songs_list) - 1 and down_arrow_button.checkForInput(mouse_pos):
-                    current_song_index += 1
-                    # Force re-render of the song button with new text
-                    current_song = songs_list[current_song_index]
-                    song_button = Button(
-                        image=None,
-                        pos=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2), # Maintain centered position
-                        text_input=f"{current_song["title"].upper()}\n{current_song.get("artist", "Unknown Artist").upper()}",
-                        font_size=40, # Adjusted font size
-                        base_color=COLORS["WHITE"],
-                        hovering_color=COLORS["RED"],
-                        width=song_button_width,
-                        height=song_button_height
-                    )
-
-                # Check the single song button input
-                if song_button.checkForInput(mouse_pos):
-                    selected_song_key = songs_list[current_song_index]["key"]
-                    # Start the game in endless mode
-                    start_game(selected_song_key, "endless") # Pass 'endless' as difficulty/mode
-                    return
-
-                # Check back button input
-                if back_button.checkForInput(mouse_pos):
-                    main_menu()
-                    return
-
-        pygame.display.update() 
