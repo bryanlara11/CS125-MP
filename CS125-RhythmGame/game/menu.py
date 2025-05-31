@@ -211,6 +211,8 @@ def start_game(song_key, difficulty, mode="normal"):
             start_game(song_key, difficulty, mode) # Restart the same game
         elif next_action == 'difficulty_select':
             pattern_selection(song_key) # Go back to difficulty selection for the same song
+        elif next_action == 'difficulty_select_current_song':
+            pattern_selection(song_key) # Go back to difficulty selection for the song that just finished
         else: # Covers 'quit' or None (window close)
             main_menu() # Go back to the main menu
     elif mode == "endless":

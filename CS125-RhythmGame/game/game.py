@@ -341,14 +341,12 @@ class Game:
                             elif btn['label'] == 'DIFFICULTY':
                                 # Go back to difficulty selection for the current song
                                 self.running = False # Stop the current game instance
-                                # The song_selection_menu will be called after this instance ends,
-                                # and then pattern_selection will be called from there.
-                                # We need a way to pass the selected_song_key back.
-                                # This might require restructuring the menu flow slightly.
+                                # Signal to the main menu to go back to difficulty selection for this song
+                                self.next_action = 'difficulty_select_current_song' # Set a specific action
+                                # The menu.py will read this action and call pattern_selection(self.song_key)
                                 # For now, we'll just go back to main menu as a temporary measure.
                                 # TODO: Implement proper return to difficulty selection.
                                 # For now, setting running to False and letting menu handle the return
-                                pass # Let the menu handle returning
                             elif btn['label'] == 'QUIT':
                                 self.running = False # Stop the current game instance
                                 # The main_menu will be called after this instance ends.
