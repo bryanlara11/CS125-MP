@@ -116,10 +116,8 @@ class Game:
         # Check if the custom delay exists in song_info, otherwise use the default constant
         if "VIDEO_START_DELAY" in self.song_info:
             self.video_start_delay = self.song_info["VIDEO_START_DELAY"]
-            print(f"[DEBUG] Using custom video delay: {self.video_start_delay}")
         else:
             self.video_start_delay = VIDEO_START_DELAY
-            print(f"[DEBUG] Using default video delay: {self.video_start_delay}")
 
         if video_path is not None:
             try:
@@ -200,7 +198,6 @@ class Game:
 
         # Unpause video after delay if it's paused
         if self.background_video and self.background_video.get_playback_data()['paused'] and elapsed_sec >= self.video_start_delay:
-            print(f"[DEBUG] Unpausing video at {elapsed_sec}s (delay: {self.video_start_delay}s)")
             self.background_video.toggle_pause()
 
         # Update video frames if game is running and video is active
@@ -381,7 +378,6 @@ class Game:
 
         # Draw background video if not paused or showing results and after delay
         if not self.paused and not self.show_results and self.background_video and elapsed_sec >= self.video_start_delay:
-            print(f"[DEBUG] Drawing video at {elapsed_sec}s (delay: {self.video_start_delay}s)")
             # Create a temporary surface for the video
             video_surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
             self.background_video.draw(video_surface, (0, 0))
