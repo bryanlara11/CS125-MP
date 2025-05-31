@@ -1,3 +1,19 @@
+"""
+Main Game Module
+
+This module contains the core game logic and mechanics for the rhythm game.
+It handles:
+- Game state management
+- Player input processing
+- Score tracking
+- Game loop execution
+- Rendering and display updates
+- Integration with other game components
+
+The Game class serves as the central controller that coordinates
+all game elements including arrows, scoring, and visual feedback.
+"""
+
 import pygame
 import sys
 import os

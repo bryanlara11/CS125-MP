@@ -1,3 +1,20 @@
+"""
+Main entry point for the Rhythm Game application.
+
+This module initializes the game environment, sets up the display window,
+and launches the main menu. It handles the basic setup of pygame and
+configures the working directory for proper asset loading.
+
+The game runs in a 1600x900 window and uses a modular structure with
+separate modules for the menu system and game logic.
+
+Dependencies:
+    - pygame: For game window and event handling
+    - game.menu: Contains the main menu implementation
+    - game.game: Contains the main game logic
+    - assets: Contains game assets like outlines and arrows
+"""
+
 import pygame
 import sys
 import os

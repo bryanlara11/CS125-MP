@@ -110,8 +110,9 @@ python Main.py
 - Combo system
 - Score tracking
 - Hit feedback (Perfect, Good, Late, Miss)
-- Background video with adjustable transparency
-- Song-specific music videos
+- Background video with adjustable transparency (10% opacity by default)
+- Song-specific music videos synchronized with gameplay
+- Smooth video playback with proper screen clearing to prevent ghosting
 
 ## Troubleshooting
 
@@ -131,6 +132,8 @@ pip install -r requirements.txt
    - Ensure the video files are in the correct location (`assets/vids/songX.mp4` where X is the song number)
    - Check if your system supports the video codec
    - Each song should have its corresponding video file (e.g., song1.mp4 for Song 1)
+   - If you experience dizziness, you can adjust the video transparency in the code
+   - Make sure you have the `pymediainfo` package installed for video playback
 
 4. **Font Issues**:
    - Make sure the font file is in the correct location (`assets/fonts/Grand9k Pixel.ttf`)
